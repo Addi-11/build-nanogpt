@@ -3,7 +3,10 @@
 - Video Lecture: [Let's reproduce GPT-2 (124M) YouTube lecture](https://youtu.be/l8pRSuU81PU)
 
 ## Notes
+![transformers-architecture](pics/image.png)
+#### Optimization Steps taken: 
 - Weight sharing schemes : wte and lm_head have same embeddings, input and output embeddings usually same: synonymns have same probabilites
+- Weight initialization: with std = 0.02 and conditional scaling for deeper networks
 - variances in residual stream grows, so scaling factor 1/sqrt(n), to control activations
 - every layer in traansformers has 2 blocks that add to residual networks.
 ## Increasing Training Speed
