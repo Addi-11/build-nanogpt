@@ -61,6 +61,10 @@ mlp = MLP(config)
     - pad vocab_size to nice, then drive probablities to zeros, for extra tokens to you have which you know arent in dataset.
 
 8. **AdamW params :**
+    - `AdamW(model.parameters(), lr=3e-4, betas=(0.9, 0.95), eps=1e-8)` 
+    - beta1: running average of the gradient. Represents the momentum term.
+    - beta2: running average of the squared gradient. Represents the adaptive learning rate term. More responsive to recent changes = fast convergence.
+    - eps: small constant added to the denominator of the update step to improve numerical stability.
 
 9. **Grad Clipping :**
     - prevent model shock
