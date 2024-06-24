@@ -15,6 +15,8 @@
     - Range and Precision: The exponent in BFLOAT16 is the same as in FP32, which means it has the same range (from very small to very large numbers). However, the precision is lower due to having fewer bits for the fraction.
     - BFLOAT16 uses half the memory of FP32 
     - Modern GPUs and TPUs often have optimized paths for BFLOAT16 arithmetic.
+5. Add torch.compile() : Ahead-Of-Time (AOT) compilation techniques = faster execution times
+     - convert model to optimized intermediate representation - fusees multiple small operations into single larger one, reducing overhead of launching kernels on hardware
 - variances in residual stream grows, so scaling factor 1/sqrt(n), to control activations
 - every layer in traansformers has 2 blocks that add to residual networks.
 ## Increasing Training Speed

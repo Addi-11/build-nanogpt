@@ -256,6 +256,7 @@ torch.set_float32_matmul_precision('high') # ensure higher accuracy in matrix mu
 # get logits
 model = GPT(GPTConfig())
 model.to(device) # ensure data and model on same device
+model = torch.compile(model)
 
 # optimize
 optimizer = torch.optim.AdamW(model.parameters(), lr=3e-4)
