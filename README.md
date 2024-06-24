@@ -83,6 +83,8 @@ mlp = MLP(config)
     - Instead of updating the model's weights after each mini-batch, gradients are accumulated over multiple mini-batches (called accumulation steps).
     - Instead of updating the weights, add (accumulate) the gradients to a running sum.
 
+13. **Distributed Training :**
+    - 
 9. **Use int8 for inferencing :**
     - we dont need high precision or floating points, so int will work too
 
