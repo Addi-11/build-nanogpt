@@ -67,7 +67,8 @@ mlp = MLP(config)
     - eps: small constant added to the denominator of the update step to improve numerical stability.
 
 9. **Grad Clipping :**
-    - prevent model shock
+    - `torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)`
+    - prevent model shock, exploding gradient, overshooting gradients
 
 10. **Cosine Decay Learning Scheduler :**
 
