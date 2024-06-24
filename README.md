@@ -6,8 +6,8 @@
 ![transformers-architecture](pics/image.png)
 #### Optimization Steps taken: 
 1. Weight sharing schemes : wte and lm_head have same embeddings, input and output embeddings usually same: synonymns have same probabilites
-1. Weight initialization: with std = 0.02 and conditional scaling for deeper networks
-1. Controlling precision of matrix multiplication, with float32. Ensure higher accuracy in matrix multiplication operations, at the potential cost of slower performance. : <br>`torch.set_float32_matmul_precision('high')`
+2. Weight initialization: with std = 0.02 and conditional scaling for deeper networks
+3. Controlling precision of matrix multiplication, with float32. Ensure higher accuracy in matrix multiplication operations, at the potential cost of slower performance. : <br>`torch.set_float32_matmul_precision('high')`
 4. Typecast float to bfloat16
     - 1 bit for the sign.
     - 8 bits for the exponent.
@@ -17,6 +17,8 @@
     - Modern GPUs and TPUs often have optimized paths for BFLOAT16 arithmetic.
 5. Add torch.compile() : Ahead-Of-Time (AOT) compilation techniques = faster execution times
      - convert model to optimized intermediate representation - fusees multiple small operations into single larger one, reducing overhead of launching kernels on hardware
+6. Switch to Flash Attention :
+     - Kernel Fusion: By fusing multiple steps of the attention calculation into a single kernel, FlashAttention reduces the overhead of launching multiple separate kernels, leading to faster execution times.
 - variances in residual stream grows, so scaling factor 1/sqrt(n), to control activations
 - every layer in traansformers has 2 blocks that add to residual networks.
 ## Increasing Training Speed

@@ -36,12 +36,15 @@ class CasualSelfAttention(nn.Module):
         q = q.view(B, T, self.n_head, C // self.n_head).transpose(1, 2) # (B, nh, T, hs)
         v = v.view(B, T, self.n_head, C // self.n_head).transpose(1, 2) # (B, nh, T, hs)
 
+        # ATTENTION
         # attention - materialize the large (T, T) matrix for all keys, queries
-        att = (q @ k.transpose(-2, -1)) * (1.0 / math.sqrt(k.size(-1))) # multiply query keys
-        att = att.masked_fill(self.bias[:,:,:T, :T] == 0, float('-inf')) # removing lower half triangle
-        att = F.softmax(att, dim=-1)
+        # att = (q @ k.transpose(-2, -1)) * (1.0 / math.sqrt(k.size(-1))) # multiply query keys
+        # att = att.masked_fill(self.bias[:,:,:T, :T] == 0, float('-inf')) # removing lower half triangle
+        # att = F.softmax(att, dim=-1)
+        # y = att @ v # (B, nh, T, T) x (B, nh, T, hs) -> (B, nh, T, hs)
 
-        y = att @ v # (B, nh, T, T) x (B, nh, T, hs) -> (B, nh, T, hs)
+        # FLASH ATTENTION IMPLEMENTED
+        y = F.scaled_dot_product_attention(q, k, v, is_casual=True)
         y = y.transpose(1,2).contigous().view(B,T,C) # re-assemble all head outputs side by side
 
         y = self.c_proj(y) # output projection
