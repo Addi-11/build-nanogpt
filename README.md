@@ -78,9 +78,13 @@ mlp = MLP(config)
     - prevent overfitting by adding a penalty to the loss function for large weights
     - use fused adam optimizer (hardware efficient)
 
-12. **Gradient Accumulation in parallel distribution :**
+12. **Gradient Accumulation :**
+    - increase batch_size without increasing memory footprint (for 1M params)
+    - Instead of updating the model's weights after each mini-batch, gradients are accumulated over multiple mini-batches (called accumulation steps).
+    - Instead of updating the weights, add (accumulate) the gradients to a running sum.
 
 9. **Use int8 for inferencing :**
+    - we dont need high precision or floating points, so int will work too
 
 
 ### Paper Links:
