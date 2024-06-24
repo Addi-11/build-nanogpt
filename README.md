@@ -16,12 +16,17 @@
     - BFLOAT16 uses half the memory of FP32 
     - Modern GPUs and TPUs often have optimized paths for BFLOAT16 arithmetic.
 5. Add torch.compile() : Ahead-Of-Time (AOT) compilation techniques = faster execution times
-     - convert model to optimized intermediate representation - fusees multiple small operations into single larger one, reducing overhead of launching kernels on hardware
+    - convert model to optimized intermediate representation - fusees multiple small operations into single larger one, reducing overhead of launching kernels on hardware
 6. Switch to Flash Attention :
-     - Kernel Fusion: By fusing multiple steps of the attention calculation into a single kernel, FlashAttention reduces the overhead of launching multiple separate kernels, leading to faster execution times.
+    - Kernel Fusion: By fusing multiple steps of the attention calculation into a single kernel, FlashAttention reduces the overhead of launching multiple separate kernels, leading to faster execution times.
+7. Nice Numbers:
+    - vocab size 50257 -> 50304 nice
+
+
+## Increasing Training Speed
+
 - variances in residual stream grows, so scaling factor 1/sqrt(n), to control activations
 - every layer in traansformers has 2 blocks that add to residual networks.
-## Increasing Training Speed
 - use int8 for inferencing not 
 2. TensorCore NVIDIA PAPER: 
 - pytorch autocast, turning in bfloat16
