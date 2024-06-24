@@ -75,6 +75,8 @@ mlp = MLP(config)
 
 11. **Weight Decay Paramerter :**
     - done for parameters in participating in matrix multiplication and embeddings
+    - prevent overfitting by adding a penalty to the loss function for large weights
+    - use fused adam optimizer (hardware efficient)
 
 12. **Gradient Accumulation in parallel distribution :**
 
