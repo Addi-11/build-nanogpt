@@ -5,8 +5,9 @@
 ## Notes
 ![transformers-architecture](pics/image.png)
 #### Optimization Steps taken: 
-- Weight sharing schemes : wte and lm_head have same embeddings, input and output embeddings usually same: synonymns have same probabilites
-- Weight initialization: with std = 0.02 and conditional scaling for deeper networks
+1. Weight sharing schemes : wte and lm_head have same embeddings, input and output embeddings usually same: synonymns have same probabilites
+1. Weight initialization: with std = 0.02 and conditional scaling for deeper networks
+1. Controlling precision of matrix multiplication, with float32. Ensure higher accuracy in matrix multiplication operations, at the potential cost of slower performance. : <br>`torch.set_float32_matmul_precision('high')`
 - variances in residual stream grows, so scaling factor 1/sqrt(n), to control activations
 - every layer in traansformers has 2 blocks that add to residual networks.
 ## Increasing Training Speed
