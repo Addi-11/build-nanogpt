@@ -8,6 +8,13 @@
 1. Weight sharing schemes : wte and lm_head have same embeddings, input and output embeddings usually same: synonymns have same probabilites
 1. Weight initialization: with std = 0.02 and conditional scaling for deeper networks
 1. Controlling precision of matrix multiplication, with float32. Ensure higher accuracy in matrix multiplication operations, at the potential cost of slower performance. : <br>`torch.set_float32_matmul_precision('high')`
+4. Typecast float to bfloat16
+    - 1 bit for the sign.
+    - 8 bits for the exponent.
+    - 7 bits for the fraction (mantissa).
+    - Range and Precision: The exponent in BFLOAT16 is the same as in FP32, which means it has the same range (from very small to very large numbers). However, the precision is lower due to having fewer bits for the fraction.
+    - BFLOAT16 uses half the memory of FP32 
+    - Modern GPUs and TPUs often have optimized paths for BFLOAT16 arithmetic.
 - variances in residual stream grows, so scaling factor 1/sqrt(n), to control activations
 - every layer in traansformers has 2 blocks that add to residual networks.
 ## Increasing Training Speed

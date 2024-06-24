@@ -248,7 +248,7 @@ if torch.cuda.is_available():
     torch.cuda.manual_seed(1337)
 
 train_loader = DataLoaderLite(B=16, T=1024)
-torch.set_float32_matmul_precision('high')
+torch.set_float32_matmul_precision('high') # ensure higher accuracy in matrix multiplication, slow performance
 
 # model = GPT.from_pretrained('gpt2')
 # print("didn't crash yay!")
@@ -265,7 +265,10 @@ for i in range(50):
     x, y = x.to(device), y.to(device)
 
     optimizer.zero_grad()
-    logits, loss = model(x, y)
+    # bfloat16 has same exponent range as fp32. 
+    # Povides enough precision to maintain model accuracy while reducing computational and memory overhead.
+    with torch.autocast(device_type=device, dtype=torch.bfloat16):
+        logits, loss = model(x, y)
     loss.backward()
     optimizer.step()
     torch.cuda.synchronize() # wait for gpu to finish the work
