@@ -71,6 +71,7 @@ mlp = MLP(config)
     - prevent model shock, exploding gradient, overshooting gradients
 
 10. **Cosine Decay Learning Scheduler :**
+    - reduce the learning rate during training using a cosine function.
 
 11. **Weight Decay Paramerter :**
     - done for parameters in participating in matrix multiplication and embeddings
