@@ -27,6 +27,14 @@ ln_2 = nn.LayerNorm(config.n_embd)
 mlp = MLP(config)
 ```
 
+| **MapReduce**                     | **Transformer Attention Equivalent**                                                                                        |
+| ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `map(x) → (k, v)`                           | Each input vector `xᵢ` produces a **key** `kᵢ = xᵢW_K` and a **value** `vᵢ = xᵢW_V`.                                        |
+| `query` not in MapReduce                    | Each position `i` in the input also computes a **query** `qᵢ = xᵢW_Q`.                                                      |
+| `shuffle and group by key`                  | Soft matching: For each `qᵢ`, compute dot-product similarity with all keys `kⱼ`, yielding weights `αᵢⱼ = softmax(qᵢ ⋅ kⱼ)`. |
+| `reduce` by aggregating values for each key | Attention output `oᵢ = Σⱼ αᵢⱼ ⋅ vⱼ` is a weighted combination of value vectors.                                             |
+
+
 - variances in the residual stream can grow significantly as the depth of the model increases.
 - scaling factor, to control activations is 1/sqrt(n), n = number of layers.
 - form of normalized initialization like Xavier or He.
@@ -40,7 +48,7 @@ mlp = MLP(config)
     - input and output embeddings usually same: synonymns have same probabilites
 
 3. **Precision of matrix multiplication :**
-    - control precision with float32. 
+    - control precision with tensorfloat32 (TF32), not default FP32. 
     - Ensure higher accuracy in matrix multiplication operations
     - potential cost of slower performance. 
     - `torch.set_float32_matmul_precision('high')`
@@ -56,17 +64,19 @@ mlp = MLP(config)
 
 5. **Torch.compile() :**
     - Ahead-Of-Time (AOT) compilation techniques = faster execution times
+    - does not use the standard python interpreter - which does not know what comes next.
     - convert model to optimized intermediate representation - fusees multiple small operations into single larger one, reducing overhead of launching kernels on hardware.
     - reduces to-s and fros between memory
     - cant find flash attention though
 
 6. **Switch to Flash Attention :**
     - Kernel Fusion: By fusing multiple steps of the attention calculation into a single kernel, FlashAttention reduces the overhead of launching multiple separate kernels, leading to faster execution times.
+    - Intermediate attention state in not materialized.
 
 7. **Nice Numbers :**
     - vocab size 50257 -> 50304 nice
     - avoid ugly numbers and use power of two's
-    - pad vocab_size to nice, then drive probablities to zeros, for extra tokens to you have which you know arent in dataset.
+    - pad vocab_size to nice, then drive probablities to zeros, for extra tokens to you have which you know arent in dataset. These extra tokens though never appear in the dataset, so their probabilities are driven to 0 by softmax.
 
 8. **AdamW params :**
     - `AdamW(model.parameters(), lr=3e-4, betas=(0.9, 0.95), eps=1e-8)` 
@@ -92,8 +102,8 @@ mlp = MLP(config)
     - Instead of updating the weights, add (accumulate) the gradients to a running sum.
 
 13. **Distributed Training :**
-    - 
-9. **Use int8 for inferencing :**
+    - Use DDP (distributed Data Parallel) 
+14. **Use int8 for inferencing :**
     - we dont need high precision or floating points, so int will work too
 
 
