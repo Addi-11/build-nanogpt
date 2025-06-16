@@ -34,11 +34,20 @@ mlp = MLP(config)
 | `shuffle and group by key`                  | Soft matching: For each `qᵢ`, compute dot-product similarity with all keys `kⱼ`, yielding weights `αᵢⱼ = softmax(qᵢ ⋅ kⱼ)`. |
 | `reduce` by aggregating values for each key | Attention output `oᵢ = Σⱼ αᵢⱼ ⋅ vⱼ` is a weighted combination of value vectors.                                             |
 
+#### Training Initialization
 
-- variances in the residual stream can grow significantly as the depth of the model increases.
-- scaling factor, to control activations is 1/sqrt(n), n = number of layers.
-- form of normalized initialization like Xavier or He.
-- Weight intialization with std = 0.02 and conditional scaling for deeper networks
+- Weight intialization with std = 0.02 and conditional scaling for deeper networks. `torch.nn.init.normal_(module.weight, mean=0, std=0.02)`
+- Weight intialization using He, Xavier
+   - He used in ReLU, Linear, GeLU activations
+   - Xiavier used in tanh and sigmoid activations 
+- Scaling factor in variances:
+   - in the residual stream can grow significantly as the depth of the model increases.
+   - scaling factor, to control activations is 1/sqrt(n), n = number of layers, like He Initialization
+   - ```
+     if hasattr(module, 'NANOGPT_SCALE_INIT'):
+                # conditional scaling for deeper models, to control variance
+                std *= (2*self.config.n_layer) ** -0.5
+     ```
 
 
 #### Optimization Steps taken: 
@@ -61,6 +70,12 @@ mlp = MLP(config)
     - Range and Precision: The exponent in BFLOAT16 is the same as in FP32, which means it has the same range (from very small to very large numbers). However, the precision is lower due to having fewer bits for the fraction.
     - BFLOAT16 uses half the memory of FP32 
     - Modern GPUs and TPUs often have optimized paths for BFLOAT16 arithmetic.
+    - ```
+      # bfloat16 has same exponent range as fp32. 
+      # Povides enough precision to maintain model accuracy while reducing computational and memory overhead.
+      with torch.autocast(device_type=device, dtype=torch.bfloat16):
+          logits, loss = model(x, y)
+      ```
 
 5. **Torch.compile() :**
     - Ahead-Of-Time (AOT) compilation techniques = faster execution times
@@ -72,6 +87,7 @@ mlp = MLP(config)
 6. **Switch to Flash Attention :**
     - Kernel Fusion: By fusing multiple steps of the attention calculation into a single kernel, FlashAttention reduces the overhead of launching multiple separate kernels, leading to faster execution times.
     - Intermediate attention state in not materialized.
+    - `y = F.scaled_dot_product_attention(q, k, v, is_casual=True)`
 
 7. **Nice Numbers :**
     - vocab size 50257 -> 50304 nice
@@ -90,19 +106,54 @@ mlp = MLP(config)
 
 10. **Cosine Decay Learning Scheduler :**
     - reduce the learning rate during training using a cosine function.
+    - ```
+      # 1) linear warmup for warmup_iters steps
+      if it < warmup_steps:
+          return max_lr * (it+1) / warmup_steps
+      # 2) if it > lr_decay_iters, return min learning rate
+      if it > max_steps:
+          return min_lr
+      # 3) in between, use cosine decay down to min learning rate
+      decay_ratio = (it - warmup_steps) / (max_steps - warmup_steps)
+      ```
 
 11. **Weight Decay Paramerter :**
     - done for parameters in participating in matrix multiplication and embeddings
     - prevent overfitting by adding a penalty to the loss function for large weights
     - use fused adam optimizer (hardware efficient)
+    - ```
+      optimizer = raw_model.configure_params(weight_decay=0.1, learning_rate=6e-4, device=device) # weight decay optimizer
+      ```
 
 12. **Gradient Accumulation :**
-    - increase batch_size without increasing memory footprint (for 1M params)
+    - increase batch_size without increasing memory footprint (for 1M params) :  simulate training with a larger effective batch size than what can physically fit in memory (usually GPU VRAM).
     - Instead of updating the model's weights after each mini-batch, gradients are accumulated over multiple mini-batches (called accumulation steps).
     - Instead of updating the weights, add (accumulate) the gradients to a running sum.
+    -  Example: 4 forward+backward passes with batch_size=256, accumulating gradients each time, and call optimizer.step() once after all 4. This is mathematically equivalent to doing a single step with batch size 1024.
 
 13. **Distributed Training :**
-    - Use DDP (distributed Data Parallel) 
+    - Use DDP (distributed Data Parallel)
+    - ```
+      ddp = int(os.environ.get('RANK', -1)) != -1 # is this a ddp run?
+      
+      if ddp:
+          # use of DDP atm demands CUDA, we set the device appropriately according to rank
+          assert torch.cuda.is_available(), "for now i think we need CUDA for DDP"
+          init_process_group(backend='nccl')
+          ddp_rank = int(os.environ['RANK'])
+          ddp_local_rank = int(os.environ['LOCAL_RANK'])
+          ddp_world_size = int(os.environ['WORLD_SIZE'])
+          device = f'cuda:{ddp_local_rank}'
+          torch.cuda.set_device(device)
+          master_process = ddp_rank == 0 
+          
+      if ddp:
+         model = DDP(model, device_ids=[ddp_local_rank])
+         raw_model = model.module if ddp else model
+
+      if ddp:
+         destroy_process_group()
+      ```
 14. **Use int8 for inferencing :**
     - we dont need high precision or floating points, so int will work too
 
