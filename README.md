@@ -53,7 +53,7 @@ mlp = MLP(config)
 #### Optimization Steps taken: 
 
 1. **Weight sharing schemes :** 
-    - wte and lm_head have same embeddings
+    - wte and lm_head have same embeddings `self.transformer.wte.weight = self.lm_head`
     - input and output embeddings usually same: synonymns have same probabilites
 
 3. **Precision of matrix multiplication :**
@@ -130,6 +130,22 @@ mlp = MLP(config)
     - Instead of updating the model's weights after each mini-batch, gradients are accumulated over multiple mini-batches (called accumulation steps).
     - Instead of updating the weights, add (accumulate) the gradients to a running sum.
     -  Example: 4 forward+backward passes with batch_size=256, accumulating gradients each time, and call optimizer.step() once after all 4. This is mathematically equivalent to doing a single step with batch size 1024.
+    -  ```
+           loss_accum = 0.0
+            for micro_step in range(grad_accum_steps):
+                x, y = train_loader.next_batch()
+                x, y = x.to(device), y.to(device)
+                with torch.autocast(device_type=device, dtype=torch.bfloat16):
+                    logits, loss = model(x, y)
+                # we have to scale the loss to account for gradient accumulation,
+                # because the gradients just add on each successive backward().
+                # addition of gradients corresponds to a SUM in the objective, but
+                # instead of a SUM we want MEAN. Scale the loss here so it comes out right
+                loss = loss / grad_accum_steps
+                loss_accum += loss.detach()
+    
+        optimizer.step()
+       ```
 
 13. **Distributed Training :**
     - Use DDP (distributed Data Parallel)
